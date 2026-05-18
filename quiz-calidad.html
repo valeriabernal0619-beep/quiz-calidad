@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz · Fundamentos de la Calidad</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --card: #1c1c28;
+    --border: rgba(255,255,255,0.08);
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --success: #00c896;
+    --danger: #ff4d6d;
+    --warn: #ffa94d;
+    --text: #f0f0f8;
+    --muted: rgba(240,240,248,0.5);
+    --timer-full: #6c63ff;
+    --timer-mid: #ffa94d;
+    --timer-low: #ff4d6d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+  /* ---------- PANTALLA INICIO ---------- */
+  #screen-start {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 2rem 1.5rem;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(108,99,255,0.18) 0%, transparent 70%);
+  }
+  .logo-ring {
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; margin-bottom: 1.5rem;
+    box-shadow: 0 0 32px rgba(108,99,255,0.35);
+    animation: pulse-ring 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%,100% { box-shadow: 0 0 24px rgba(108,99,255,0.3); }
+    50% { box-shadow: 0 0 48px rgba(108,99,255,0.6); }
+  }
+  .start-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(26px, 7vw, 36px);
+    font-weight: 800; text-align: center;
+    line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 40%, #6c63ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .start-sub {
+    font-size: 14px; color: var(--muted);
+    text-align: center; margin-bottom: 2.5rem;
+    letter-spacing: 0.04em;
+  }
+  .input-wrap { width: 100%; max-width: 360px; margin-bottom: 1rem; }
+  .input-label { font-size: 12px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; display: block; }
+  .input-field {
+    width: 100%; padding: 14px 18px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 16px;
+    outline: none; transition: border 0.2s;
+  }
+  .input-field:focus { border-color: var(--accent); }
+  .input-field::placeholder { color: var(--muted); }
+  .error-msg { color: var(--danger); font-size: 12px; margin-top: 6px; display: none; }
+  .btn-start {
+    width: 100%; max-width: 360px;
+    padding: 16px; border-radius: 14px;
+    background: var(--accent); border: none;
+    color: #fff; font-family: 'Syne', sans-serif;
+    font-size: 16px; font-weight: 700;
+    cursor: pointer; margin-top: 0.5rem;
+    transition: transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 0 24px rgba(108,99,255,0.4);
+  }
+  .btn-start:hover { transform: translateY(-2px); box-shadow: 0 0 36px rgba(108,99,255,0.6); }
+  .btn-start:active { transform: scale(0.98); }
+  .info-chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 2rem; }
+  .chip {
+    padding: 6px 14px; border-radius: 99px;
+    border: 1px solid var(--border);
+    font-size: 12px; color: var(--muted); background: var(--surface);
+  }
+
+  /* ---------- PANTALLA QUIZ ---------- */
+  #screen-quiz { display: none; min-height: 100vh; flex-direction: column; }
+  .quiz-header {
+    padding: 1.25rem 1.5rem 0.75rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .q-label { font-size: 13px; color: var(--muted); }
+  .q-score-chip {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 99px; padding: 4px 14px;
+    font-size: 13px; font-weight: 500;
+  }
+  .progress-track { height: 3px; background: var(--border); }
+  .progress-bar { height: 3px; background: var(--accent); transition: width 0.4s ease; }
+
+  /* Timer circle */
+  .timer-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 1.5rem 1.5rem 1rem;
+  }
+  .timer-circle-svg { width: 80px; height: 80px; transform: rotate(-90deg); }
+  .timer-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+  .timer-arc {
+    fill: none; stroke-width: 5;
+    stroke-linecap: round;
+    stroke: var(--timer-full);
+    stroke-dasharray: 220;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear, stroke 0.5s;
+  }
+  .timer-num {
+    position: absolute; font-family: 'Syne', sans-serif;
+    font-size: 22px; font-weight: 700; color: var(--text);
+  }
+  .timer-container { position: relative; display: flex; align-items: center; justify-content: center; }
+
+  /* Question card */
+  .q-body { padding: 0 1.5rem 1.5rem; flex: 1; }
+  .q-type-badge {
+    display: inline-block; padding: 4px 12px;
+    border-radius: 99px; font-size: 11px; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1rem;
+  }
+  .badge-mc { background: rgba(108,99,255,0.15); color: #a09dff; border: 1px solid rgba(108,99,255,0.3); }
+  .badge-vf { background: rgba(255,169,77,0.15); color: #ffc26b; border: 1px solid rgba(255,169,77,0.3); }
+  .q-text {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(16px, 4.5vw, 20px);
+    font-weight: 600; line-height: 1.4;
+    margin-bottom: 1.5rem; color: var(--text);
+  }
+  .opt-btn {
+    width: 100%; text-align: left;
+    padding: 14px 18px; border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--card); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 15px;
+    cursor: pointer; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+    transition: border 0.15s, background 0.15s;
+  }
+  .opt-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(108,99,255,0.08); }
+  .opt-btn:disabled { cursor: default; }
+  .opt-btn.correct { border-color: var(--success); background: rgba(0,200,150,0.12); color: #00c896; }
+  .opt-btn.wrong { border-color: var(--danger); background: rgba(255,77,109,0.1); color: var(--danger); }
+  .opt-btn.show-correct { border-color: var(--success); background: rgba(0,200,150,0.08); color: #00c896; }
+  .opt-letter {
+    width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+    background: rgba(255,255,255,0.07); display: flex;
+    align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px;
+  }
+  .feedback-strip {
+    margin-top: 0.75rem; padding: 10px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; display: none;
+  }
+  .feedback-strip.ok { background: rgba(0,200,150,0.1); color: var(--success); display: block; }
+  .feedback-strip.fail { background: rgba(255,77,109,0.1); color: var(--danger); display: block; }
+  .feedback-strip.timeout { background: rgba(255,169,77,0.1); color: var(--warn); display: block; }
+  .btn-next {
+    width: 100%; padding: 15px; border-radius: 12px;
+    background: var(--accent); border: none; color: #fff;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px;
+    cursor: pointer; margin-top: 1rem; display: none;
+    transition: opacity 0.2s;
+  }
+  .btn-next:hover { opacity: 0.85; }
+
+  /* ---------- PANTALLA RESULTADO ---------- */
+  #screen-result {
+    display: none; min-height: 100vh;
+    padding: 2rem 1.5rem;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(108,99,255,0.15) 0%, transparent 70%);
+  }
+  .res-name {
+    font-size: 13px; color: var(--muted);
+    text-align: center; margin-bottom: 0.5rem;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .res-title {
+    font-family: 'Syne', sans-serif; font-size: 28px;
+    font-weight: 800; text-align: center; margin-bottom: 2rem;
+  }
+  .score-circle {
+    width: 130px; height: 130px; border-radius: 50%;
+    border: 3px solid var(--accent);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin: 0 auto 2rem;
+    box-shadow: 0 0 40px rgba(108,99,255,0.3);
+  }
+  .score-pct { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; }
+  .score-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .stats-row { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+  .stat-box {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1rem; text-align: center;
+  }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 700; }
+  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .level-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.25rem; margin-bottom: 1.5rem;
+  }
+  .level-badge {
+    display: inline-block; padding: 4px 14px; border-radius: 99px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 0.75rem;
+  }
+  .level-msg { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* Diagrama */
+  .section-label {
+    font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+    margin: 1.75rem 0 0.5rem; letter-spacing: -0.01em;
+  }
+  .section-sub { font-size: 13px; color: var(--muted); margin-bottom: 1rem; line-height: 1.5; }
+  .chart-wrap {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1rem; margin-bottom: 1rem;
+    position: relative; height: 280px;
+  }
+  .chart-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 1.25rem; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+  .interp {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.1rem 1.25rem;
+    margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .interp-n { font-size: 11px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .interp-t { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .interp-b { font-size: 13px; color: var(--muted); line-height: 1.55; }
+  .interp:nth-child(2) { border-left-color: var(--warn); }
+  .interp:nth-child(2) .interp-n { color: var(--warn); }
+  .interp:nth-child(3) { border-left-color: var(--success); }
+  .interp:nth-child(3) .interp-n { color: var(--success); }
+  .interp:nth-child(4) { border-left-color: var(--accent2); }
+  .interp:nth-child(4) .interp-n { color: var(--accent2); }
+
+  .btn-reset {
+    width: 100%; padding: 15px; border-radius: 12px;
+    background: transparent; border: 1px solid var(--border); color: var(--text);
+    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 15px;
+    cursor: pointer; margin-top: 2rem;
+    transition: background 0.15s;
+  }
+  .btn-reset:hover { background: var(--card); }
+</style>
+</head>
+<body>
+
+<!-- INICIO -->
+<div id="screen-start">
+  <div class="logo-ring">📋</div>
+  <div class="start-title">Fundamentos<br>de la Calidad</div>
+  <div class="start-sub">Cuestionario evaluativo · 10 preguntas · 30 seg c/u</div>
+  <div class="input-wrap">
+    <label class="input-label" for="nombre-input">Tu nombre completo</label>
+    <input class="input-field" id="nombre-input" type="text" placeholder="Escribe tu nombre..." autocomplete="off">
+    <div class="error-msg" id="nombre-error">Por favor ingresa tu nombre.</div>
+  </div>
+  <button class="btn-start" onclick="startQuiz()">Comenzar →</button>
+  <div class="info-chips">
+    <span class="chip">10 preguntas</span>
+    <span class="chip">30 seg por pregunta</span>
+    <span class="chip">Múltiple opción + V/F</span>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz">
+  <div class="quiz-header">
+    <span class="q-label" id="q-counter">Pregunta 1 de 10</span>
+    <span class="q-score-chip" id="q-score">0 pts</span>
+  </div>
+  <div class="progress-track"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+
+  <div class="timer-wrap">
+    <div class="timer-container">
+      <svg class="timer-circle-svg" viewBox="0 0 80 80">
+        <circle class="timer-bg" cx="40" cy="40" r="35"/>
+        <circle class="timer-arc" id="timer-arc" cx="40" cy="40" r="35"/>
+      </svg>
+      <span class="timer-num" id="timer-num">30</span>
+    </div>
+  </div>
+
+  <div class="q-body">
+    <div id="q-type-badge" class="q-type-badge badge-mc">Múltiple opción</div>
+    <div class="q-text" id="q-text"></div>
+    <div id="q-options"></div>
+    <div class="feedback-strip" id="feedback-strip"></div>
+    <button class="btn-next" id="btn-next" onclick="nextQuestion()">Siguiente →</button>
+  </div>
+</div>
+
+<!-- RESULTADO -->
+<div id="screen-result">
+  <div class="res-name" id="res-name"></div>
+  <div class="res-title">Resultados</div>
+  <div class="score-circle">
+    <div class="score-pct" id="res-pct">0%</div>
+    <div class="score-lbl">puntaje</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-num" id="res-correctas">0</div><div class="stat-lbl">Correctas</div></div>
+    <div class="stat-box"><div class="stat-num" id="res-tiempo">0s</div><div class="stat-lbl">Tiempo prom.</div></div>
+    <div class="stat-box"><div class="stat-num" id="res-nivel-icon">⭐</div><div class="stat-lbl">Nivel</div></div>
+  </div>
+  <div class="level-card">
+    <div class="level-badge" id="level-badge">Excelente</div>
+    <div class="level-msg" id="level-msg"></div>
+  </div>
+
+  <div class="section-label">Diagrama de dispersión</div>
+  <div class="section-sub">Relación entre inspecciones realizadas y defectos encontrados en un proceso productivo.</div>
+  <div class="chart-wrap"><canvas id="scatter-chart" role="img" aria-label="Diagrama de dispersión con correlación negativa entre inspecciones y defectos.">A mayor número de inspecciones, menor cantidad de defectos.</canvas></div>
+  <div class="chart-legend">
+    <span><span class="legend-dot" style="background:#6c63ff"></span>Lote de producción</span>
+    <span><span class="legend-dot" style="width:20px;height:3px;border-radius:0;background:#ff6584;display:inline-block;vertical-align:middle;"></span>Tendencia</span>
+  </div>
+
+  <div class="section-label">Interpretaciones</div>
+  <div class="interp">
+    <div class="interp-n">Interpretación 1</div>
+    <div class="interp-t">Correlación negativa</div>
+    <div class="interp-b">A medida que aumentan las inspecciones, disminuyen los defectos. Esto confirma que la inspección continua es un mecanismo efectivo de control de calidad.</div>
+  </div>
+  <div class="interp">
+    <div class="interp-n">Interpretación 2</div>
+    <div class="interp-t">Puntos atípicos (outliers)</div>
+    <div class="interp-b">Dos puntos se alejan de la tendencia general. El punto con alta cantidad de defectos y pocas inspecciones puede indicar un lote problemático o fallo en el proceso, requiriendo análisis de causa raíz.</div>
+  </div>
+  <div class="interp">
+    <div class="interp-n">Interpretación 3</div>
+    <div class="interp-t">Zona de control óptimo</div>
+    <div class="interp-b">La concentración de puntos entre 15 y 25 inspecciones con menos de 10 defectos sugiere un rango óptimo. Superar 25 inspecciones no reduce significativamente los defectos.</div>
+  </div>
+  <div class="interp">
+    <div class="interp-n">Interpretación 4</div>
+    <div class="interp-t">Tendencia lineal y predicción</div>
+    <div class="interp-b">La línea de tendencia muestra un comportamiento predecible, lo que permite estimar defectos esperados según el número de inspecciones planificadas y tomar decisiones proactivas.</div>
+  </div>
+
+  <button class="btn-reset" onclick="resetQuiz()">← Volver al inicio</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const PREGUNTAS = [
+  { tipo:'mc', texto:'¿Qué concepto define la calidad como el grado en que un conjunto de características inherentes cumple con los requisitos?', opciones:['ISO 9001','Norma ISO 9000','Ciclo PHVA','Diagrama de Ishikawa'], correcta:1 },
+  { tipo:'vf', texto:'El ciclo PHVA (Planificar, Hacer, Verificar, Actuar) es también conocido como ciclo de Deming.', opciones:['Verdadero','Falso'], correcta:0 },
+  { tipo:'mc', texto:'¿Cuál de las siguientes herramientas se usa para identificar la causa raíz de un problema de calidad?', opciones:['Diagrama de Gantt','Diagrama de Ishikawa','Diagrama de dispersión','Gráfica de Pareto'], correcta:1 },
+  { tipo:'vf', texto:'El principio de Pareto en calidad establece que el 80% de los problemas provienen del 20% de las causas.', opciones:['Verdadero','Falso'], correcta:0 },
+  { tipo:'mc', texto:'¿Qué mide el diagrama de dispersión en control de calidad?', opciones:['La frecuencia de defectos por tipo','La relación entre dos variables','El tiempo de ciclo de un proceso','La distribución de un solo dato'], correcta:1 },
+  { tipo:'mc', texto:'¿Cuál es el objetivo principal del control estadístico de procesos (CEP)?', opciones:['Eliminar todos los defectos del producto','Reducir la variabilidad dentro de límites aceptables','Aumentar la producción a cualquier costo','Reemplazar la inspección manual'], correcta:1 },
+  { tipo:'vf', texto:'Un proceso bajo control estadístico garantiza que todos los productos sean perfectos y sin defectos.', opciones:['Verdadero','Falso'], correcta:1 },
+  { tipo:'mc', texto:"¿Qué representa la letra 'V' en el ciclo PHVA?", opciones:['Validar','Vigilar','Verificar','Valorar'], correcta:2 },
+  { tipo:'vf', texto:'La mejora continua es un principio fundamental de los sistemas de gestión de calidad según la norma ISO 9001.', opciones:['Verdadero','Falso'], correcta:0 },
+  { tipo:'mc', texto:'¿Cuál describe mejor una correlación positiva en un diagrama de dispersión?', opciones:['A mayor X, menor Y','Los puntos no tienen ningún patrón','A mayor X, mayor Y','Los puntos forman un círculo'], correcta:2 }
+];
+
+const CIRC = 2 * Math.PI * 35;
+let currentQ = 0, score = 0, timerInterval = null, timeLeft = 30;
+let userName = '', answered = false, totalTime = 0, scatterChart = null;
+
+function showScreen(id) {
+  ['screen-start','screen-quiz','screen-result'].forEach(s => {
+    const el = document.getElementById(s);
+    el.style.display = s === id ? (id === 'screen-quiz' ? 'flex' : 'block') : 'none';
+  });
+}
+
+function startQuiz() {
+  const inp = document.getElementById('nombre-input');
+  const err = document.getElementById('nombre-error');
+  if (!inp.value.trim()) { err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  userName = inp.value.trim();
+  currentQ = 0; score = 0; answered = false; totalTime = 0;
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = PREGUNTAS[currentQ];
+  answered = false;
+  document.getElementById('q-counter').textContent = `Pregunta ${currentQ+1} de ${PREGUNTAS.length}`;
+  document.getElementById('q-score').textContent = `${score} pts`;
+  document.getElementById('progress-bar').style.width = `${(currentQ/PREGUNTAS.length)*100}%`;
+  const badge = document.getElementById('q-type-badge');
+  badge.textContent = q.tipo === 'vf' ? 'Verdadero / Falso' : 'Múltiple opción';
+  badge.className = 'q-type-badge ' + (q.tipo === 'vf' ? 'badge-vf' : 'badge-mc');
+  document.getElementById('q-text').textContent = q.texto;
+  document.getElementById('feedback-strip').className = 'feedback-strip';
+  document.getElementById('btn-next').style.display = 'none';
+
+  const opts = document.getElementById('q-options');
+  opts.innerHTML = '';
+  q.opciones.forEach((op, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    const letters = ['A','B','C','D'];
+    btn.innerHTML = `<span class="opt-letter">${q.tipo==='vf' ? (i===0?'V':'F') : letters[i]}</span>${op}`;
+    btn.onclick = () => selectAnswer(i);
+    opts.appendChild(btn);
+  });
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = 30;
+  updateTimer();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      if (!answered) timeUp();
+    }
+  }, 1000);
+}
+
+function updateTimer() {
+  document.getElementById('timer-num').textContent = timeLeft;
+  const arc = document.getElementById('timer-arc');
+  const offset = CIRC * (1 - timeLeft / 30);
+  arc.style.strokeDashoffset = offset;
+  arc.style.stroke = timeLeft > 15 ? '#6c63ff' : timeLeft > 8 ? '#ffa94d' : '#ff4d6d';
+}
+
+function timeUp() {
+  answered = true;
+  totalTime += 30;
+  const q = PREGUNTAS[currentQ];
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach(b => b.disabled = true);
+  btns[q.correcta].classList.add('show-correct');
+  const fb = document.getElementById('feedback-strip');
+  fb.textContent = '⏱ Tiempo agotado. La respuesta correcta está resaltada.';
+  fb.className = 'feedback-strip timeout';
+  document.getElementById('btn-next').style.display = 'block';
+  document.getElementById('btn-next').textContent = currentQ < PREGUNTAS.length-1 ? 'Siguiente →' : 'Ver resultados →';
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+  totalTime += (30 - timeLeft);
+  const q = PREGUNTAS[currentQ];
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach(b => b.disabled = true);
+  const fb = document.getElementById('feedback-strip');
+  if (idx === q.correcta) {
+    btns[idx].classList.add('correct');
+    score++;
+    fb.textContent = '✓ ¡Correcto!';
+    fb.className = 'feedback-strip ok';
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[q.correcta].classList.add('show-correct');
+    fb.textContent = '✗ Incorrecto. La respuesta correcta está resaltada.';
+    fb.className = 'feedback-strip fail';
+  }
+  document.getElementById('btn-next').style.display = 'block';
+  document.getElementById('btn-next').textContent = currentQ < PREGUNTAS.length-1 ? 'Siguiente →' : 'Ver resultados →';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ < PREGUNTAS.length) { renderQuestion(); }
+  else { showResults(); }
+}
+
+function showResults() {
+  showScreen('screen-result');
+  const pct = Math.round((score / PREGUNTAS.length) * 100);
+  const avgTime = Math.round(totalTime / PREGUNTAS.length);
+  document.getElementById('res-name').textContent = userName;
+  document.getElementById('res-pct').textContent = pct + '%';
+  document.getElementById('res-correctas').textContent = score + '/' + PREGUNTAS.length;
+  document.getElementById('res-tiempo').textContent = avgTime + 's';
+  let nivel, icon, msg, color;
+  if (pct >= 80) { nivel='Excelente'; icon='🏆'; msg='¡Dominas los fundamentos de la calidad! Tu comprensión es sólida y consistente.'; color='rgba(0,200,150,0.15)'; }
+  else if (pct >= 60) { nivel='Bueno'; icon='⭐'; msg='Buen desempeño. Tienes una base sólida, aunque hay algunos conceptos que vale la pena repasar.'; color='rgba(108,99,255,0.15)'; }
+  else { nivel='Sigue practicando'; icon='📖'; msg='Te recomendamos revisar el ciclo PHVA, el diagrama de Ishikawa y el control estadístico de procesos.'; color='rgba(255,169,77,0.15)'; }
+  document.getElementById('res-nivel-icon').textContent = icon;
+  const lb = document.getElementById('level-badge');
+  lb.textContent = nivel; lb.style.background = color; lb.style.color = '#fff'; lb.style.border = '1px solid rgba(255,255,255,0.15)';
+  document.getElementById('level-msg').textContent = msg;
+  drawScatter();
+}
+
+function drawScatter() {
+  if (scatterChart) { scatterChart.destroy(); scatterChart = null; }
+  const data = [{x:5,y:28},{x:8,y:24},{x:10,y:21},{x:12,y:19},{x:14,y:17},{x:15,y:15},{x:17,y:13},{x:18,y:12},{x:20,y:10},{x:22,y:9},{x:23,y:8},{x:25,y:7},{x:27,y:6},{x:28,y:5},{x:30,y:4},{x:7,y:30},{x:19,y:16},{x:24,y:11},{x:11,y:22},{x:16,y:14}];
+  const n=data.length, sx=data.reduce((a,p)=>a+p.x,0), sy=data.reduce((a,p)=>a+p.y,0), sxy=data.reduce((a,p)=>a+p.x*p.y,0), sx2=data.reduce((a,p)=>a+p.x*p.x,0);
+  const m=(n*sxy-sx*sy)/(n*sx2-sx*sx), b=(sy-m*sx)/n;
+  const ctx = document.getElementById('scatter-chart').getContext('2d');
+  scatterChart = new Chart(ctx, {
+    data: { datasets: [
+      { type:'scatter', label:'Lote', data, backgroundColor:'rgba(108,99,255,0.8)', pointRadius:6, pointHoverRadius:8 },
+      { type:'line', label:'Tendencia', data:[{x:3,y:Math.round(m*3+b)},{x:32,y:Math.round(m*32+b)}], borderColor:'#ff6584', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false }
+    ]},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#1c1c28', titleColor:'#f0f0f8', bodyColor:'rgba(240,240,248,0.7)', callbacks:{ label: c=>`Inspecciones: ${c.parsed.x} · Defectos: ${c.parsed.y}` }}},
+      scales:{
+        x:{ title:{display:true,text:'Inspecciones realizadas',color:'rgba(240,240,248,0.4)',font:{size:11}}, min:0,max:35, ticks:{color:'rgba(240,240,248,0.4)',font:{size:11}}, grid:{color:'rgba(255,255,255,0.05)'} },
+        y:{ title:{display:true,text:'Defectos encontrados',color:'rgba(240,240,248,0.4)',font:{size:11}}, min:0,max:35, ticks:{color:'rgba(240,240,248,0.4)',font:{size:11}}, grid:{color:'rgba(255,255,255,0.05)'} }
+      }
+    }
+  });
+}
+
+function resetQuiz() {
+  clearInterval(timerInterval);
+  document.getElementById('nombre-input').value = '';
+  if (scatterChart) { scatterChart.destroy(); scatterChart = null; }
+  showScreen('screen-start');
+}
+
+showScreen('screen-start');
+</script>
+</body>
+</html>
